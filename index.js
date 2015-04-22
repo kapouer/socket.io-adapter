@@ -50,6 +50,19 @@ Adapter.prototype.add = function(id, room, fn){
 };
 
 /**
+ * Test if a plain JSON object is empty.
+ *
+ * @param {Object} obj
+ */
+
+function isEmpty(obj) {
+  for (var key in obj) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * Removes a socket from a room.
  *
  * @param {String} socket id
@@ -63,7 +76,7 @@ Adapter.prototype.del = function(id, room, fn){
   this.rooms[room] = this.rooms[room] || {};
   delete this.sids[id][room];
   delete this.rooms[room][id];
-  if (this.rooms.hasOwnProperty(room) && !Object.keys(this.rooms[room]).length) {
+  if (this.rooms.hasOwnProperty(room) && isEmpty(this.rooms[room])) {
     delete this.rooms[room];
   }
 
@@ -86,13 +99,13 @@ Adapter.prototype.delAll = function(id, fn){
         delete this.rooms[room][id];
       }
 
-      if (this.rooms.hasOwnProperty(room) && !Object.keys(this.rooms[room]).length) {
+      if (this.rooms.hasOwnProperty(room) && isEmpty(this.rooms[room])) {
         delete this.rooms[room];
       }
     }
   }
   delete this.sids[id];
-  
+
   if (fn) process.nextTick(fn.bind(null, null));
 };
 

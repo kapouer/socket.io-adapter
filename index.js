@@ -44,25 +44,10 @@ Adapter.prototype.__proto__ = Emitter.prototype;
 Adapter.prototype.add = function(id, room, fn){
   this.sids[id] = this.sids[id] || {};
   this.sids[id][room] = true;
-  this.rooms[room] = this.rooms[room] || {};
-  this.rooms[room][id] = true;
+  this.rooms[room] = this.rooms[room] || Room();
+  this.rooms[room].add(id);
   if (fn) process.nextTick(fn.bind(null, null));
 };
-
-/**
- * Test if a plain JSON object is empty.
- *
- * @param {Object} obj
- */
-
-function isEmpty(obj) {
-  for (var key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      return false;
-    }
-  }
-  return true;
-}
 
 /**
  * Removes a socket from a room.
@@ -75,10 +60,10 @@ function isEmpty(obj) {
 
 Adapter.prototype.del = function(id, room, fn){
   this.sids[id] = this.sids[id] || {};
-  this.rooms[room] = this.rooms[room] || {};
+  this.rooms[room] = this.rooms[room] || Room();
   delete this.sids[id][room];
-  delete this.rooms[room][id];
-  if (this.rooms.hasOwnProperty(room) && isEmpty(this.rooms[room])) {
+  this.rooms[room].del(id);
+  if (this.rooms[room].length === 0) {
     delete this.rooms[room];
   }
 
@@ -97,10 +82,10 @@ Adapter.prototype.delAll = function(id, fn){
   if (rooms) {
     for (var room in rooms) {
       if (rooms.hasOwnProperty(room)) {
-        delete this.rooms[room][id];
+        this.rooms[room].del(id);
       }
 
-      if (this.rooms.hasOwnProperty(room) && isEmpty(this.rooms[room])) {
+      if (this.rooms[room].length === 0) {
         delete this.rooms[room];
       }
     }
@@ -134,8 +119,9 @@ Adapter.prototype.broadcast = function(packet, opts){
       for (var i = 0; i < rooms.length; i++) {
         var room = self.rooms[rooms[i]];
         if (!room) continue;
-        for (var id in room) {
-          if (room.hasOwnProperty(id)) {
+        var sockets = room.sockets;
+        for (var id in sockets) {
+          if (sockets.hasOwnProperty(id)) {
             if (ids[id] || ~except.indexOf(id)) continue;
             socket = self.nsp.connected[id];
             if (socket) {
@@ -155,4 +141,32 @@ Adapter.prototype.broadcast = function(packet, opts){
       }
     }
   });
+};
+
+/**
+ * Room constructor.
+ *
+ * @api private
+ */
+
+function Room() {
+  if (!(this instanceof Room)) return new Room();
+  this.sockets = {};
+  this.length = 0;
+}
+
+Room.prototype.add = function(id) {
+  if (this.sockets.hasOwnProperty(id)) return;
+  else {
+    this.sockets[id] = true;
+    this.length++;
+  }
+};
+
+Room.prototype.del = function(id) {
+  if (!this.sockets.hasOwnProperty(id)) return;
+  else {
+    delete this.sockets[id];
+    this.length--;
+  }
 };

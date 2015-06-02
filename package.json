@@ -1,6 +1,6 @@
 {
   "name": "socket.io-adapter",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "repository": {
     "type": "git",
     "url": "git://github.com/Automattic/socket.io-adapter.git"
